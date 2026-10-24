@@ -1,0 +1,198 @@
+【大网关类->大网关合作方信息(net_nat_partner)】
+需要调用这个表的字段如下：
+domain：域名
+partner：合作方
+appname：应用名
+dest_ip：vip信息
+direction：方向
+net_type：网络类型、互联网还是合作伙伴
+
+
+http://cmdbv3.op.lufax.com/gate/api/v3/ci/net_nat_partner?token=ops|2641f62cef2019aec456ae7ba4405753
+{
+    "count": 1328, 
+    "status": "200", 
+    "total": 1328, 
+    "data": [
+        {
+            "domain": "oauthptr.1qianbao.com", 
+            "verify_type": "\u8fde\u901a\u6027\u9a8c\u8bc1", 
+            "updated_at": null, 
+            "is_paic": "\u662f", 
+            "partner": "\u5e73\u5b89\u58f9\u94b1\u5305\u7535\u5b50\u5546\u52a1\u6709\u9650\u516c\u53f8", 
+            "id": 1239, 
+            "updated_by": null, 
+            "impact": "\u5e73\u4fdd\u4ee3 insurance-app", 
+            "appname": "guohua-gw", 
+            "created_by": "API", 
+            "verify_api": "", 
+            "dest_ip": "30.97.232.56", 
+            "status": "online", 
+            "direction": "OUTBOUND", 
+            "description": "", 
+            "dest_sys": "\u5e73\u4fdd\u4ee3", 
+            "delete_mark": "1", 
+            "expired_at": null, 
+            "created_at": "2021-05-27 04:03:16", 
+            "cmdb_id": "000f1ed1e5cd4df98361391649e28c27", 
+            "contact": "\u4e1a\u52a1\u8054\u7cfb\u4eba\uff1a\u6c6a\u9038\u83ba/ 18917760512(\u5e73\u4fdd\u4ee3\u8fd0\u8425) \u7cfb\u7edf\u8054\u7cfb\u4eba\uff1a\u675c\u6587\u521a/13417366408(\u5e73\u4fdd\u4ee3IT) \u7f51\u7edc\u8054\u7cfb\u4eba\uff1a\u6f58\u957f\u4fe8/13339239876(\u58f9\u94b1\u5305\u7f51\u7edc)", 
+            "net_type": "PRT"
+        }, 
+        {
+            "domain": "shkycapi.pingan.com.cn", 
+            "verify_type": "0", 
+            "updated_at": "1542868661", 
+            "is_paic": "\u662f", 
+            "partner": "\u5e73\u5b89\u79d1\u6280", 
+            "id": 1, 
+            "updated_by": "liukui038", 
+            "impact": "\u5ba2\u670d\uff0cKYC\u5916\u547c", 
+            "appname": "ztcs-gw", 
+            "created_by": "liukui038", 
+            "verify_api": "", 
+            "dest_ip": "30.97.234.87", 
+            "status": "online", 
+            "direction": "OUTBOUND", 
+            "description": "ztcs-gw-->SH-ESG-kyc\uff08\u79d1\u6280\u4e0a\u6d77\uff09", 
+            "dest_sys": "ESG-OPEN \u4f01\u4e1a\u670d\u52a1\u6cbb\u7406\u5f00\u653e\u5e73\u53f0", 
+            "delete_mark": "1", 
+            "expired_at": "2024-01-01 00:00:00", 
+            "created_at": "1537341583", 
+            "cmdb_id": "0017ff41c4cc49fda8df57abdfbb4be5", 
+            "contact": "\u5e73\u5b89\u79d1\u6280\u6df1\u5733\u7cfb\u7edf\u8fd0\u8425\u90e8 \u516c\u5171\u5e73\u53f0\u5e94\u7528\u670d\u52a1\u7ec4 \u5206\u7ec4\u7ecf\u7406\uff1a\u5bab\u6797\u6d9b 7*24H\uff1a18128826752 \u5e73\u5b89\u79d1\u6280\u8fd0\u7ef4\u8c22\u5929\u7965 <XIETIANXIANG692@pingan.com.cn> \u5468\u660e\u4f1f(\u5e73\u5b89\u79d1\u6280\u5f00\u53d1)13981769920 \u5e73\u5b89\u79d1\u6280\u6c60\u7ea2\u9732 <CHIHONGLU902@pingan.com.cn>", 
+            "net_type": "PRT"
+        }, 
+	...
+    ]
+}
+
+
+
+【应用类->应用基本信息(application)】
+需要调用这个表的字段如下：
+domain：所属域
+domain_en_name：所属域中文名
+owner：负责人
+op：运维
+rd：开发人员
+
+http://cmdbv3.op.lufax.com/gate/api/v3/ci/application?token=ops|2641f62cef2019aec456ae7ba4405753
+{
+    "count": 3280, 
+    "status": "200", 
+    "total": 3280, 
+    "data": [
+        {
+            "is_docker_application": "1", 
+            "domain": "\u5728\u7ebf\u6570\u636e\u8ba1\u7b97\u670d\u52a1", 
+            "partner_response": null, 
+            "k8s_conf": null, 
+            "package_name": null, 
+            "app_status": "online", 
+            "updated_at": "2022-01-06 14:14:17", 
+            "module": null, 
+            "partner_request": null, 
+            "health_check": "/status/health.check", 
+            "owner": "zhangliang461", 
+            "swimlanes": null, 
+            "id": null, 
+            "is_gray_pub": "true", 
+            "url_name": "", 
+            "domain_en_name": "pd", 
+            "appname": "dt-studio-srv", 
+            "can_font_access": null, 
+            "static_file": null, 
+            "created_by": "API", 
+            "can_login": "0", 
+            "rd": null, 
+            "nas": null, 
+            "version": null, 
+            "gitlab_group": null, 
+            "batch_id": null, 
+            "type": "tomcat", 
+            "as_idc": null, 
+            "mysql_owner_schema": null, 
+            "stg_env": null, 
+            "updated_by": "zhaopeng301", 
+            "memo": "\u5143\u6570\u636e\u7ba1\u7406\u3001\u6570\u636e\u8d28\u91cf\u3001\u62a5\u8868\u3001\u4ea7\u54c1\u3001\u5206\u6790", 
+            "delete_mark": "1", 
+            "context_path": "/dt-studio", 
+            "child_en_domain": "pd-backend", 
+            "catalog": "app\u5e94\u7528", 
+            "test_env_url": null, 
+            "network_segment_domain": null, 
+            "other_owner_schema": null, 
+            "level": "L3", 
+            "prd_env": null, 
+            "is_nonstandard": "0", 
+            "versions": "reg_20220511_01", 
+            "soft": null, 
+            "created_at": "2019-07-16 16:59:53", 
+            "area": null, 
+            "cmdb_id": "0003950e5c424758b77fe93bd47d6536", 
+            "alias": null, 
+            "jvm_opts": null, 
+            "itsm_id": null, 
+            "is_b_application": "0", 
+            "oracle_owner_schema": null, 
+            "op": "zhangkai944,zhaopeng301"
+        }, 
+        {
+            "is_docker_application": "1", 
+            "domain": "\u62cd\u5356\u7cfb\u7edf", 
+            "partner_response": null, 
+            "k8s_conf": null, 
+            "package_name": null, 
+            "app_status": "online", 
+            "updated_at": "2021-09-03 09:23:58", 
+            "module": null, 
+            "partner_request": null, 
+            "health_check": "", 
+            "owner": "xieweidong179", 
+            "swimlanes": null, 
+            "id": null, 
+            "is_gray_pub": "true", 
+            "url_name": "", 
+            "domain_en_name": "bid", 
+            "appname": "bmp-svc", 
+            "can_font_access": null, 
+            "static_file": null, 
+            "created_by": "API", 
+            "can_login": "0", 
+            "rd": "xieweidong179", 
+            "nas": null, 
+            "version": null, 
+            "gitlab_group": null, 
+            "batch_id": null, 
+            "type": "tomcat", 
+            "as_idc": null, 
+            "mysql_owner_schema": null, 
+            "stg_env": null, 
+            "updated_by": "tongyi757", 
+            "memo": "\u62cd\u5356\u7cfb\u7edf-\u8d44\u4ea7\u7ba1\u7406\u670d\u52a1\u5e73\u53f0(lpm-bmp)\u7684\u57fa\u7840\u670d\u52a1\u5e94\u7528\u3002\n\u4e4b\u524d\u7533\u8bf7\u7684bmp-srv\u547d\u540d\u4e0d\u51c6\u786e,\u91cd\u65b0\u63d0\u4ea4\u4e00\u4e2a\u7533\u8bf7(bmp-svc)\u3002", 
+            "delete_mark": "1", 
+            "context_path": "/bmp-svc", 
+            "child_en_domain": "bid-bk", 
+            "catalog": "app\u5e94\u7528", 
+            "test_env_url": null, 
+            "network_segment_domain": null, 
+            "other_owner_schema": null, 
+            "level": "L2", 
+            "prd_env": null, 
+            "is_nonstandard": "0", 
+            "versions": "reg_20220125_01", 
+            "soft": null, 
+            "created_at": "2019-12-07 11:28:21", 
+            "area": null, 
+            "cmdb_id": "003826151ca14211b84432955c685a04", 
+            "alias": null, 
+            "jvm_opts": null, 
+            "itsm_id": null, 
+            "is_b_application": "0", 
+            "oracle_owner_schema": null, 
+            "op": "hanjiamin653,liuhaiyang930,yechenlin544"
+        }, 
+	...
+    ]
+}
+

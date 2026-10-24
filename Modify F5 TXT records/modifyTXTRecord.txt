@@ -1,0 +1,44 @@
+import sys
+import bigsuds
+
+if __name__ == "__main__":
+
+    host = "30.95.0.34"
+
+    action = sys.argv[1]
+    name = sys.argv[2].strip()
+    value = sys.argv[3].strip()
+
+    assert ".lutest." in name
+    if not name.endswith("."):
+        name += "."
+
+    name_suffix = name.split("lutest.")[-1].split(".")
+    assert len(name_suffix) > 2
+    
+    zone_name = name_suffix[-3]+"."+name_suffix[-2]+"."
+    viewzone = {"view_name":"external", "zone_name":zone_name}
+
+    TXTRecord = {"domain_name":name, "text":value, "ttl":600}
+    api = bigsuds.BIGIP(host,username="admin",password="Ad@1hblsqt")
+    if action=="add":
+        print("{}{}".format("add",TXTRecord)) 
+        api.Management.ResourceRecord.add_txt([viewzone],[[TXTRecord]])
+    elif action=="del":
+        print("{}{}".format("del",TXTRecord))
+        api.Management.ResourceRecord.delete_txt([viewzone],[[TXTRecord]])
+    
+    flag = False
+    ret = api.Management.ResourceRecord.get_rrs([viewzone])
+    #print ret
+    for r in ret[0]:
+        if name in r:
+            flag = True
+            break
+    if flag == False and action== "del":
+        print("success!")
+    elif flag == True and action=="add":
+        print("success!")
+    else:
+        print("fail!")
+    #return True

@@ -1,0 +1,26 @@
+“”“
+通过API方式获取GTM中创建的不同的topology记录信息，下面是通过API方式获取的记录数据
+name字段即省份
+regionMembers字段这个省份对应的网段
+
+{“kind”:"tm:gtm:region:regioncollectionstate",
+    "selfLink":"https://localhost/mgmt/tm/gtm/region?ver=11.6.5.3",
+    "items":[
+        {"kind":"tm:gtm:region:regionstate",
+            "name":"CN_AnHui_CMCC",
+            "partition":"Common",
+            "fullPath":"/Common/CN_AnHui_CMCC",
+            "generation":1
+            "selfLink":"https://localhost/mgmt/tm/gtm/region/~Common~CN_AnHui_CMCC?ver=11.6.5.3",
+            "regionMembers":[{"name":"subnet 36.161.0.0/24"},{"name":"subnet 36.161.1.0/24"}]
+            },
+        {"kind":"tm:gtm:region:regionstate",
+            "name":"CN_AoMen_CNC",
+            "partition":"Common",
+            "fullPath":"/Common/CN_AoMen_CNC",
+            "generation":1
+            "selfLink":"https://localhost/mgmt/tm/gtm/region/~Common~CN_CN_AoMen_CNC?ver=11.6.5.3",
+            "regionMembers":[{"name":"subnet 36.161.0.0/24"},{"name":"subnet 36.161.1.0/24"}]
+            },
+            ]
+}

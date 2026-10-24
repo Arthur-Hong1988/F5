@@ -1,0 +1,24 @@
+采集脚本位于30.94.0.118上面
+脚本名称：BIG-GATEWAY-INFO.py
+信息以syslog形式发送给ES：30.94.0.169，他们通过ES对数据进行处理再同步到CMDB中
+
+脚本每天产生的信息存放在：/wls/networkdaily/networkdaily/cmdb/firewall/
+产生目录文件：0612show-run-nat、0612show-run-object、0612show-run-object-group
+0612show-run-nat:
+0616B-INT-FW-001-big-gateway-new.xls
+0616B-PRT-FW-001-big-gateway-new.xls
+0616W-INT-FW-001-big-gateway-new.xls
+0616W-PRT-FW-001-big-gateway-new.xls
+
+B-INT-FW-001-show-run-nat.txt
+B-PRT-FW-001-show-run-nat.xls
+W-INT-FW-001-show-run-nat.xls
+W-PRT-FW-001-show-run-nat.xls
+
+脚本每个小时的30分执行一次
+crontab -l
+30 */1 * * * /usr/local/bin/python /home/wls81opr/BIG-GATEWAY-INFO.py >> /tmp/cdplog
+会显示我们脚本执行是否成功。
+
+
+

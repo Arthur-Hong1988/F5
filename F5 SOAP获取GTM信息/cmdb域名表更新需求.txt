@@ -1,0 +1,70 @@
+需求
+1.CMDB 其他->域名外网信息完善
+
+2.由于普惠目前使用陆金所的GTM域名解析使用的多数是zonerunner静态的解析，目前默认更新到CMDB表中并且运营商默认归类为华为云
+
+3.更新后的CMDB满足如下条件
+1）域名对应的IP地址显示属于哪个DC
+2）域名需要显示IPv6记录
+3）判断域名是否双活，域名如果拥有2个或者以上的解析的话表示处于双活状态，如果没有双活，那么需要将信息反馈到日常巡检脚本中
+4）域名信息中排出陆国际、陆香港相关的域名，因为目前这些域名已经不用
+
+4.原脚本在脚本机上名称为bigipgtm.py
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+字段展示
+域名       ip     DC    type    是否双活
+
+开发逻辑
+cmdb中的记录主要分成两部分
+1.wideip
+2.zonerunner
+
+1.wideip
+1）通过restapi获取wideip记录，
+2）然后得到poolname
+3）pool member、在pool member中得到servername:vs记录，
+4）通过servername字段可以知道这个pool member所在的datacenter
+注意：wideip创建后会自动在zonerunner创建TTL为0的rrs记录。
+
+2.zonerunner
+1）获取所有的zonename，
+2）获取zonename对应的rrs记录，
+3）针对rrs记录中挑选出TTL是600，并且是A记录或者是AAAA记录的资源
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+通过SOAP接口，python模块bigsuds处理
+api = bigsuds.BIGIP(hostname,username,password).BlobalLB
+#生成wideip列表
+wideiplistv1 = api.WideIP.get_list()
+输出：['/Common/*.finvestapp.co', '/Common/*.lfex.com'']
+
+wideiplistv2 = api.WideIPV2.get_list()
+输出：[{'wideip_type':'GTM_QUERY_TYPE_A','wideip_name':'/Common/*.finvestapp.co'},]
+
+
+#生成pool
+poolv1 = api.WideIP.get_wide_ip_pool(wideiplistv1)
+输出：[[{'pool_name':'/Common/Pool_*_finvestapp_co','ratio':1,'roder':0}],[{'pool_name':'/Common/Pool_*_lfex_com','ratio':1,'roder':0}]]
+
+poolv2 = api.WideIPV2.get_wide_ip_pool(wideiplistv2)
+输出：[[{'pool_type':'GTM_QUERY_TYPE_A', 'pool_name':'/Common/Pool_*_finvestapp_co'}]]
+
+
+# 生成poolmember
+pool = [{'pool_type':'GTM_QUERY_TYPE_A', 'pool_name':'/Common/Pool_*_finvestapp_co'}]
+members = api.PoolV2.get_member(pool)
+输出：[[{'name':'xxx_443','server':'/Common/xxx'},{}]]
+
+生成datacenter
+server = ['/Common/Pool_*_finvestapp_co']
+datacenter = api.Server.get_data_center(server)
+输出：['/Common/SZ_Puhui_BGP']
+
+获取member的ip地址
+server = ['/Common/SZ_Puhui_202_69_31_48_BGP']
+ip = api.Server.get_ip_v2(server)
+输出：[[{'device':'SZ_Puhui_202_69_31_48_BGP','addresses_on_device':['202.69.31.48']}]]
+

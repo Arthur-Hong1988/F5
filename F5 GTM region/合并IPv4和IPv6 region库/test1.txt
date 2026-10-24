@@ -1,0 +1,7 @@
+gtm region /Common/cmcc-shanxi {
+    region-members {
+        subnet 211.137.112.0/20 { }
+        subnet 211.137.128.0/20 { }
+        subnet 218.200.0.0/18 { }
+    }
+}

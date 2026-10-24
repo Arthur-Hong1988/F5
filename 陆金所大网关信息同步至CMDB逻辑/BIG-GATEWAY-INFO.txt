@@ -1,0 +1,329 @@
+#-*- coding: UTF-8 -*-
+import os
+import sys
+import re
+#import linecache
+#import xlrd
+import xlsxwriter
+import xlwt
+import time
+import socket
+import datetime
+import json
+import paramiko
+import threading
+
+from ciscoconfparse import CiscoConfParse
+from collections import defaultdict
+
+
+def send_syslog(message,level=6,facility=3,host='30.94.0.169',port=514):
+    sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+    data = '<%d>%s'%(level+facility*8,message)
+    sock.sendto(data,(host,port))
+    sock.close()
+
+##############################################################
+#get all the members from object name or object-group name
+##############################################################
+
+def interpretName(objectname):
+	name_content = {}
+	for object in objectname:
+		name = object.text.split()[-1]
+		contentlist = []
+		for content in object.all_children:
+			contentlist.append(content.text)
+		name_content[name] = contentlist
+	return name_content
+
+###############################################################
+#The types of "object" and "object-group" look like as follows,
+#
+#object network XXX
+#  host X.X.X.X
+#  subnet X.X.X.X X.X.X.X
+#
+#object-group network XXX
+#  network-object object XXX
+#  network-object host X.X.X.X
+#  network-object X.X.X.X X.X.X.X
+#
+#getObjectIP() is to get the real ip addresses according to  the 
+#object name and object-group name
+################################################################
+
+def getObjectIP(device):
+	t = time.strftime('%m%d',time.localtime(time.time()))
+	
+	path_object="/wls/networkdaily/networkdaily/cmdb/firewall"+"/"+t+"show-run-object"
+	path_objectgroup="/wls/networkdaily/networkdaily/cmdb/firewall"+"/"+t+"show-run-object-group"
+	
+	fn_object = path_object + "/" + device + "show-run-object.txt"
+	fn_objectgroup = path_objectgroup+"/" + device + "show-run-object-group.txt"
+	
+	parse_object = CiscoConfParse(fn_object)
+	parse_objectgroup = CiscoConfParse(fn_objectgroup)
+
+	hostname = parse_object.find_objects(r"^object\snetwork")
+        groupname = parse_objectgroup.find_objects(r"^object-group\snetwork")
+	
+	host_ip = interpretName(hostname)
+	group_host = interpretName(groupname)
+
+	object_ip = {}
+
+	selfip = ["30.66.239.241","30.66.239.242","30.65.239.241","30.65.239.242","30.98.239.241","30.98.239.242","30.97.239.241","30.97.239.242"]
+
+	for host,ip in host_ip.items():
+		iplist = []
+		for i in ip:
+			if "host" in i and not i[len("host")+2:] in selfip:
+				iplist.append(i[len("host")+2:])
+			elif "subnet" in i:
+				iplist.append(i[len("subnet")+2:])
+		object_ip[host] = iplist
+
+	for group,host in group_host.items():
+		hostlist = []
+		for i in host:
+			if "network-object object" in i:
+				object = i[len("network-object object")+2:]
+				if object_ip.get(object):
+					hostlist.append(object_ip.get(object))
+			elif "network-object host" in i:
+				if i[len("network-object host")+2:] not in selfip:
+					hostlist.append(i[len("network-object host")+2:])
+			elif "network-object" in i:
+				hostlist.append(i[len("network-object")+2:])
+		object_ip[group] = hostlist
+
+	object_ip["any"] = "any"
+	return object_ip		
+
+######################################################
+#convert ip addresses in an 1D or 2D array to a string
+######################################################
+
+def arr2D_to_str(arr):
+	if arr == None:
+		return None
+	if type(arr) == str:
+		return arr
+	str_ret = ""
+	arr_temp =[]
+	for a in arr:
+		if type(a) == list:
+			str_temp = ",".join(a)
+		else:
+			str_temp = a
+		arr_temp.append(str_temp)
+	str_ret = ",".join(arr_temp)
+	return str_ret
+
+
+def vipChange(address):
+	if len(address.split(",")) > 1:
+		return address
+        seg = address.split(".")
+        if int(seg[2]) > 200:
+                seg[2] = int(seg[2]) - 4
+        return seg[0]+"."+seg[1]+"."+str(seg[2])+"."+seg[3]
+
+#########################################################
+#get the status of big gateway in the given datacenter 
+######################################################### 
+
+def getStatus(dc, snat, inBX, inWGQ):
+	if (dc == "B" and snat in inBX) or (dc == "W" and snat in inWGQ):
+		return "online"
+	elif (dc == "B" and snat in inWGQ) or (dc == "W" and snat in inBX):
+		return "offline"
+	else:
+		return "not in use"
+
+##########################################################
+#get the NAT relatives from "sh run nat" results, and
+#send the information to cmdbv3 via syslog with json fomat
+##########################################################
+
+def getNat(device):
+
+	lock.acquire()
+	print device + " starts"
+	lock.release()
+
+	file=xlwt.Workbook(encoding='utf-8',style_compression=0)
+	sheet=file.add_sheet('data', cell_overwrite_ok=True)
+	row = 0
+
+	format="%Y-%m-%d %H:%M:%S"
+	opr_time = time.strftime(format,time.localtime(time.time()))
+        t = time.strftime('%m%d',time.localtime(time.time()))
+        path_nat="/wls/networkdaily/networkdaily/cmdb/firewall"+"/"+t+"show-run-nat"
+	fn_nat = path_nat+"/" + device + "show-run-nat.txt"
+	parse_nat = CiscoConfParse(fn_nat)
+	natobject = parse_nat.find_objects(r"^nat")
+	
+	ns = {}
+	ns = getObjectIP(device)	
+
+	if "PRT" in device:
+		flushRunningConf()
+		inBX,inWGQ = getActiveRoute()
+
+	sum = 0
+	dx = {}
+	for nat in natobject:
+		nat_ele = nat.text.split()
+		if len(nat_ele) >= 10:
+			direction = nat_ele[1]
+			dc = device.split("-")[0]
+			add1 = arr2D_to_str(ns.get(nat_ele[4]))
+			add2 = arr2D_to_str(ns.get(nat_ele[5]))
+			add3 = arr2D_to_str(ns.get(nat_ele[8]))
+			add4 = arr2D_to_str(ns.get(nat_ele[9]))
+			if not add1 or not add2 or not add3 or not add4:
+				continue
+			else: 
+				#print "%s:%s:%s:%s" % (add1,add2,add3,add4)
+				dx["net_type"] = "net_nat"
+				dx["device_name"] = device
+				dx["opr_time"] = opr_time
+				if "outside,inside" in direction or "outside,global" in direction:
+					dx["source_address"] = add4
+					dx["source_address_nat"] = add3
+					dx["destination_address"] = add2
+					dx["destination_address_nat"] = add1
+					dx["fangxiang"] = "inbound"
+					dx["vip"] = add4
+					dx["realip"] = None
+					if "PRT" in device:
+						dx["zhuangtai"] = getStatus(dc, dx["source_address_nat"], inBX, inWGQ)
+						sheet.write(row,7,dx["zhuangtai"])
+					send_syslog(json.dumps(dx))
+					sum += 1
+					sheet.write(row,0,add4)
+					sheet.write(row,1,add2)
+					sheet.write(row,2,add3)
+					sheet.write(row,3,add1)
+					sheet.write(row,4,"inbound")
+					row += 1
+				elif "inside,outside" in direction or "global,outside" in direction:
+                                        dx["source_address"] = add1
+                                        dx["source_address_nat"] = add2
+                                        dx["destination_address"] = add3
+                                        dx["destination_address_nat"] = add4
+                                        dx["fangxiang"] = "outbound"
+                                        dx["vip"] = vipChange(add1)
+                                        dx["realip"] = add1
+                                        if "PRT" in device:
+                                                dx["zhuangtai"] = getStatus(dc, dx["source_address_nat"], inBX, inWGQ)
+						sheet.write(row,7,dx["zhuangtai"])
+                                        send_syslog(json.dumps(dx))
+					sum += 1
+                                        sheet.write(row,0,add1)
+                                        sheet.write(row,1,add3)
+                                        sheet.write(row,2,add2)
+                                        sheet.write(row,3,add4)	
+					sheet.write(row,4,"outbound")
+					row += 1
+	
+	file.save(path_nat + '/' + t + device + "-big-gateway-new.xls")
+	opr_time = time.strftime(format,time.localtime(time.time()))
+	lock.acquire()
+	print device + " ends, " + str(sum) + " items sent. " + str(opr_time)
+	lock.release()
+
+#######################################################
+#flush the running configuration of PRT switches, which
+#is useful for function getActiveRoute() getting the 
+#current status of big gateway 
+#######################################################
+
+def flushRunningConf():
+        t = time.strftime('%m%d',time.localtime(time.time()))
+        cmd = ["terminal length 0","show run"]
+        prtSW = [("B-G07-PRT-SW-003","30.95.0.15"),("W-C05-PRT-SW-003","30.127.0.15")]
+
+        for hostname,network_ip in prtSW:
+                ssh=paramiko.SSHClient()
+                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                path = '/wls/networkdaily/networkdaily/showrunning'+'/'+t+"showrunning"+"/"+hostname+"-running.txt"
+                f = open(path,'w')
+                try:
+                        ssh.connect(hostname=network_ip,username="readonly",password="Re@1hblsqt",timeout=10)
+                except:
+                        try:
+                                ssh.connect(hostname=network_ip,username="admin",password="Ad@1hblsqt",timeout=10)
+                        except:
+				ssh.close()
+				f.close()
+                                return
+
+                chan=ssh.invoke_shell()
+                chan.settimeout(30)
+
+                for line in cmd:
+                        chan.send(line+"\n")
+                        #print line
+                        if line == "show run":
+                                time.sleep(10)
+                        else:
+                                time.sleep(1)
+                        str=chan.recv(999999)
+                        f.write(str)
+
+                chan.send("exit"+"\n")
+                #print chan.recv(99999)
+                chan.close()
+                ssh.close()
+                f.close()
+
+
+######################################################
+#get which datacenter the current active routes reside
+######################################################
+
+def getActiveRoute():
+        t = time.strftime('%m%d',time.localtime(time.time()))
+        path_B = '/wls/networkdaily/networkdaily/showrunning'+'/'+t+"showrunning"+"/"+"B-G07-PRT-SW-003-running.txt"
+        path_W = '/wls/networkdaily/networkdaily/showrunning'+'/'+t+"showrunning"+"/"+"W-C05-PRT-SW-003-running.txt"
+        f_B = open(path_B,"r")
+        f_W = open(path_W,"r")
+        parse_B = CiscoConfParse(f_B)
+        parse_W = CiscoConfParse(f_W)
+        obj_B = parse_B.find_objects(r"^ip\sroute.*Vlan3065")
+        obj_W = parse_W.find_objects(r"^ip\sroute.*Vlan3065")
+
+        route_B = []
+        route_W = []
+
+        for obj in obj_B:
+                route_B.append(obj.text.split()[2].split("/")[0])
+
+        for obj in obj_W:
+                route_W.append(obj.text.split()[2].split("/")[0])
+        f_B.close()
+        f_W.close()
+
+        return route_B, route_W
+
+def main():
+	devicename = ["B-INT-FW-001","B-PRT-FW-001","W-INT-FW-001","W-PRT-FW-001"]
+        threads=[]
+	for device in devicename:
+        	t=threading.Thread(target=getNat,args=(device,))
+        	threads.append(t)
+        for t in threads:
+                t.setDaemon(True)
+                t.start()
+        for t in threads:
+                t.join()
+        print "All threads are finished "
+	
+
+if __name__=='__main__':
+	lock = threading.Lock()
+	main()	
+
